@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 # Minimum CMake required
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.13)
 
 # Project
 project(onnxruntime C CXX)
@@ -149,6 +149,11 @@ if (MSVC)
   if (NOT onnxruntime_USE_CUDA)
     SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
     SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /GL")
+  endif()
+  if (onnxruntime_ENABLE_QSPECTRE)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Qspectre /guard:cf /Zi")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qspectre /guard:cf /Zi")
+    SET(CMAKE_EXE_LINKER_FLAGS  "/guard:cf /DYNAMICBASE")
   endif()
 else()
   if(onnxruntime_BUILD_FOR_NATIVE_MACHINE)
