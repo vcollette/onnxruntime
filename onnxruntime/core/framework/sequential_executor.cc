@@ -112,7 +112,17 @@ Status SequentialExecutor::Execute(const SessionState& session_state,
 
       kernel_begin_time = session_state.Profiler().StartTime();
     }
-    ORT_RETURN_IF_ERROR(p_op_kernel->Compute(&op_kernel_context));
+
+    const auto& compute_status = p_op_kernel->Compute(&op_kernel_context);
+    if (!compute_status.IsOK()) {
+      std::string msg_string =
+          "Non-zero status code returned while running Node: " +
+          p_op_kernel->Node().Name() +
+          " Status Message: " +
+          compute_status.ErrorMessage();
+      LOGS(logger, ERROR) << msg_string;
+      return Status(compute_status.Category(), compute_status.Code(), msg_string);
+    }
 
     if (f_profiler_enabled) {
       session_state.Profiler().EndTimeAndRecordEvent(profiling::NODE_EVENT,

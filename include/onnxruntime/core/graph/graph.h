@@ -503,7 +503,7 @@ class Graph {
   const std::vector<const NodeArg*>& GetOutputs() const noexcept { return graph_outputs_; }
 
   /** Returns true if a Node output is a Graph output. */
-  bool IsNodeOutputsInGraphOutputs(const Node& node) {
+  bool IsNodeOutputsInGraphOutputs(const Node& node) const {
     for (auto output_def : node.OutputDefs()) {
       if (std::find(GetOutputs().cbegin(), GetOutputs().cend(), output_def) != GetOutputs().cend()) {
         return true;
@@ -780,7 +780,8 @@ class Graph {
 
   // Add node with specified <node_proto>.
   Node& AddNode(const ONNX_NAMESPACE::NodeProto& node_proto,
-                const ArgNameToTypeMap& name_to_type);
+                const ArgNameToTypeMap& name_to_type,
+                TypeToCountMap& type_to_count_map);
 
   Version IrVersion() const noexcept {
     return ir_version_;

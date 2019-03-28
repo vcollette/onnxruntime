@@ -618,6 +618,7 @@ Graph::Graph(GraphProto* graph_proto,
       parent_graph_{parent_graph} {
   ORT_ENFORCE(graph_proto != nullptr, "graph_proto cannot be null");
   ArgNameToTypeMap name_to_type_map;
+  TypeToCountMap type_to_count_map;
 
   // these are all empty unless we received a graph_proto as input
   if (graph_proto != nullptr) {
@@ -687,7 +688,7 @@ Graph::Graph(GraphProto* graph_proto,
     }
 
     for (auto node_proto : graph_proto_->node()) {
-      AddNode(node_proto, name_to_type_map);
+      AddNode(node_proto, name_to_type_map, type_to_count_map);
     }
   }
 }
@@ -868,11 +869,6 @@ void Graph::RemoveEdge(NodeIndex src_node_index, NodeIndex dst_node_index, int s
   }
   if (nullptr == dst_arg) {
     ORT_THROW("Invalid destination node arg slot specified when removing edge.");
-  }
-  if (src_arg != dst_arg) {
-    // The edge ends specified by source and destination arg slot are not referring to same node arg.
-    // It means there was no edge between these two slots before.
-    ORT_THROW("Argument type mismatch when removing edge.");
   }
 
   nodes_[dst_node_index]->MutableRelationships().input_edges.erase(Node::EdgeEnd(*nodes_[src_node_index], src_arg_slot, dst_arg_slot));
@@ -1984,7 +1980,8 @@ Node& Graph::AddNode(const Node& other) {
 }
 
 Node& Graph::AddNode(const NodeProto& node_proto,
-                     const ArgNameToTypeMap& name_to_type_map) {
+                     const ArgNameToTypeMap& name_to_type_map,
+                     TypeToCountMap& type_to_count_map) {
   auto input_defs = CreateNodeArgs(node_proto.input(), name_to_type_map);
   auto output_defs = CreateNodeArgs(node_proto.output(), name_to_type_map);
 
@@ -1997,7 +1994,20 @@ Node& Graph::AddNode(const NodeProto& node_proto,
     attributes[attr.name()] = attr;
   }
 
-  return AddNode(node_proto.name(),
+  size_t current_op_type_count = 1;
+  const auto& op_type = node_proto.op_type();
+  auto iter = type_to_count_map.find(op_type);
+  if (iter == type_to_count_map.end())
+    type_to_count_map.insert({op_type, 1});
+  else
+    current_op_type_count = ++iter->second;
+
+  std::string& node_name = node_proto.name();
+  if (node_name.empty())
+    node_name = GenerateNodeName("unnamed_" + op_type + "_" +
+                                 std::to_string(current_op_type_count));
+
+  return AddNode(node_name,
                  node_proto.op_type(),
                  node_proto.doc_string(),
                  input_defs,
