@@ -3,8 +3,6 @@
 
 #include "performance_runner.h"
 #include "TestCase.h"
-#include "core/graph/graph_viewer.h"  //for onnxruntime::NodeArg
-#include "core/session/inference_session.h"
 #include "utils.h"
 #include "testenv.h"
 #include "providers.h"
@@ -20,10 +18,10 @@ Status PerformanceRunner::Run() {
 
   // warm up
   RunOneIteration(true /*isWarmup*/);
-  InferenceSession* session_object = (InferenceSession*)session_object_;
 
-  if (!performance_test_config_.run_config.profile_file.empty())
-    session_object->StartProfiling(performance_test_config_.run_config.profile_file);
+  //TODO: start profiling
+  //if (!performance_test_config_.run_config.profile_file.empty())
+
 
   std::unique_ptr<utils::ICPUUsage> p_ICPUUsage = utils::CreateICPUUsage();
   switch (performance_test_config_.run_config.test_mode) {
@@ -39,7 +37,8 @@ Status PerformanceRunner::Run() {
   performance_result_.average_CPU_usage = p_ICPUUsage->GetUsage();
   performance_result_.peak_workingset_size = utils::GetPeakWorkingSetSize();
 
-  if (!performance_test_config_.run_config.profile_file.empty()) session_object->EndProfiling();
+  //TODO: end profiling
+  //if (!performance_test_config_.run_config.profile_file.empty()) session_object->EndProfiling();
 
   std::cout << "Total time cost:" << performance_result_.total_time_cost << std::endl
             << "Total iterations:" << performance_result_.time_costs.size() << std::endl
@@ -49,7 +48,6 @@ Status PerformanceRunner::Run() {
 
 Status PerformanceRunner::RunOneIteration(bool isWarmup) {
   auto start = std::chrono::high_resolution_clock::now();
-  OrtRunOptions run_options;
 
   ORT_THROW_ON_ERROR(OrtRun(session_object_, nullptr, input_names_.data(), input_values_.data(), input_names_.size(),
                             output_names_raw_ptr.data(), output_names_raw_ptr.size(), output_values_.data()));
@@ -73,13 +71,13 @@ Status PerformanceRunner::RunOneIteration(bool isWarmup) {
 bool PerformanceRunner::Initialize() {
   bool has_valid_extension = HasExtensionOf(performance_test_config_.model_info.model_file_path, ORT_TSTR("onnx"));
   if (!has_valid_extension) {
-    LOGF_DEFAULT(ERROR, "input path is not a valid model");
+    printf("input path is not a valid model\n");
     return false;
   }
   std::basic_string<PATH_CHAR_TYPE> test_case_dir;
   auto st = GetDirNameFromFilePath(performance_test_config_.model_info.model_file_path, test_case_dir);
   if (!st.IsOK()) {
-    LOGF_DEFAULT(ERROR, "input path is not a valid model");
+    printf("input path is not a valid model\n");
     return false;
   }
   std::basic_string<PATH_CHAR_TYPE> model_name = GetLastComponent(test_case_dir);
@@ -94,7 +92,7 @@ bool PerformanceRunner::Initialize() {
   std::unique_ptr<ITestCase> test_case(CreateOnnxTestCase(narrow_model_name));
 
   if (!test_case->SetModelPath(performance_test_config_.model_info.model_file_path.c_str()).IsOK()) {
-    LOGF_DEFAULT(ERROR, "load model failed");
+    printf("load model failed\n");
     return false;
   }
 
@@ -105,21 +103,21 @@ bool PerformanceRunner::Initialize() {
 #ifdef USE_MKLDNN
     ORT_THROW_ON_ERROR(OrtSessionOptionsAppendExecutionProvider_Mkldnn(sf, enable_cpu_mem_arena ? 1 : 0));
 #else
-    fprintf(stderr, "MKL-DNN is not supported in this build");
+    fprintf(stderr, "MKL-DNN is not supported in this build\n");
     return false;
 #endif
   } else if (provider_name == onnxruntime::kCudaExecutionProvider) {
 #ifdef USE_CUDA
     ORT_THROW_ON_ERROR(OrtSessionOptionsAppendExecutionProvider_CUDA(sf, 0));
 #else
-    fprintf(stderr, "CUDA is not supported in this build");
+    fprintf(stderr, "CUDA is not supported in this build\n");
     return false;
 #endif
   } else if (provider_name == onnxruntime::kNupharExecutionProvider) {
 #ifdef USE_NUPHAR
     ORT_THROW_ON_ERROR(OrtSessionOptionsAppendExecutionProvider_Nuphar(sf, 0, ""));
 #else
-    fprintf(stderr, "Nuphar is not supported in this build");
+    fprintf(stderr, "Nuphar is not supported in this build\n");
     return false;
 #endif
   } else if (provider_name == onnxruntime::kTensorrtExecutionProvider) {
@@ -127,11 +125,11 @@ bool PerformanceRunner::Initialize() {
     ORT_THROW_ON_ERROR(OrtSessionOptionsAppendExecutionProvider_Tensorrt(sf));
     ORT_THROW_ON_ERROR(OrtSessionOptionsAppendExecutionProvider_CUDA(sf, 0));
 #else
-    fprintf(stderr, "TensorRT is not supported in this build");
+    fprintf(stderr, "TensorRT is not supported in this build\n");
     return false;
 #endif
   } else if (!provider_name.empty() && provider_name != onnxruntime::kCpuExecutionProvider) {
-    fprintf(stderr, "This backend is not included in perf test runner.");
+    fprintf(stderr, "This backend is not included in perf test runner.\n");
     return false;
   }
 
@@ -155,13 +153,13 @@ bool PerformanceRunner::Initialize() {
   }
 
   if (test_case->GetDataCount() <= 0) {
-    LOGS_DEFAULT(ERROR) << "there is no test data for model " << test_case->GetTestCaseName();
+    std::cout<< "there is no test data for model " << test_case->GetTestCaseName() << std::endl;
     return false;
   }
 
   st = test_case->LoadTestData(session_object_, 0 /* id */, b_, feeds_, true);
   if (!st.IsOK()) {
-    LOGS_DEFAULT(ERROR) << "Load data failed " << test_case->GetTestCaseName();
+    std::cout<< "Load data failed " << test_case->GetTestCaseName()<< std::endl;
     return false;
   }
 

@@ -71,81 +71,10 @@ Status ConvertVector(const InputType& data, OutputType** vec) {
 template <typename InputType, typename OutputType>
 Status Convert(const InputType& tensor_proto, OutputType** p_tensor);
 
-template <>
-Status Convert(const google::protobuf::RepeatedPtrField<proto::MapInt64ToFloat>& data, VectorMapInt64ToFloat** vec) {
-  return ConvertVector<google::protobuf::RepeatedPtrField<proto::MapInt64ToFloat>, VectorMapInt64ToFloat>(data, vec);
-}
-
-template <>
-Status Convert(const google::protobuf::RepeatedPtrField<proto::MapStringToFloat>& data, VectorMapStringToFloat** vec) {
-  return ConvertVector<google::protobuf::RepeatedPtrField<proto::MapStringToFloat>, VectorMapStringToFloat>(data, vec);
-}
 
 template <typename InputType, typename OutputType>
-void ConvertMap(const InputType& data, OutputType** out) {
-  OutputType* ret = new OutputType();
-  for (const auto& pv : data) {
-    (*ret)[pv.first] = pv.second;
-  }
-  *out = ret;
-}
-
-template <>
-Status Convert(const google::protobuf::Map<std::string, std::string>& data, MapStringToString** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-
-template <>
-Status Convert(const google::protobuf::Map<std::string, int64_t>& data, MapStringToInt64** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-
-template <>
-Status Convert(const google::protobuf::Map<std::string, float>& data, MapStringToFloat** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-
-template <>
-Status Convert(const google::protobuf::Map<std::string, double>& data, MapStringToDouble** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-
-template <>
-Status Convert(const google::protobuf::Map<int64_t, std::string>& data, MapInt64ToString** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-
-template <>
-Status Convert(const google::protobuf::Map<int64_t, int64_t>& data, MapInt64ToInt64** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-
-template <>
-Status Convert(const google::protobuf::Map<int64_t, float>& data, MapInt64ToFloat** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-
-template <>
-Status Convert(const google::protobuf::Map<int64_t, double>& data, MapInt64ToDouble** out) {
-  ConvertMap(data, out);
-  return Status::OK();
-}
-template <typename InputType, typename OutputType>
-Status RichTypeProtoToMLValue(const InputType& input, MLValue& value) {
-  OutputType* tensor = nullptr;
-  Status st = Convert(input, &tensor);
-  if (!st.IsOK()) return st;
-  value.Init(tensor,
-             DataTypeImpl::GetType<OutputType>(),
-             DataTypeImpl::GetType<OutputType>()->GetDeleteFunc());
-  return Status::OK();
+Status RichTypeProtoToMLValue(const InputType& , MLValue& ) {
+  return Status(common::ONNXRUNTIME,common::NOT_IMPLEMENTED);
 }
 
 template <typename CHAR_T>

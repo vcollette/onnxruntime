@@ -13,11 +13,7 @@
 #include <core/common/logging/sinks/clog_sink.h>
 #include <core/common/logging/logging.h>
 #include <core/common/status.h>
-#include <core/graph/onnx_protobuf.h>
-#include <core/framework/environment.h>
-#include <core/session/inference_session.h>
 #include <core/platform/env.h>
-#include <core/session/IOBinding.h>
 #include <core/session/onnxruntime_cxx_api.h>
 #include "test_configuration.h"
 #include "heap_buffer.h"
